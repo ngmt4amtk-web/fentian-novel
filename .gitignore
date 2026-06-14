@@ -1,3 +1,6 @@
 .DS_Store
 node_modules/
 *.zip
+
+# 透過前の原本バックアップ（ローカル保持のみ）
+assets/sprites_raw/
