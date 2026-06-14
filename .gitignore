@@ -4,3 +4,4 @@ node_modules/
 
 # 透過前の原本バックアップ（ローカル保持のみ）
 assets/sprites_raw/
+assets/sprites_t_predespill/
