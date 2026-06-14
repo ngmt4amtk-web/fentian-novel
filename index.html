@@ -14,7 +14,8 @@
     font-family:"Hiragino Mincho ProN","Yu Mincho",serif; color:var(--silk);}
   #app{position:relative; width:100vw; height:100vh; height:100dvh; overflow:hidden; background:#000;}
   /* 背景 */
-  #bg{position:absolute; inset:0; transition:background 1.2s ease; z-index:1;}
+  #bg{position:absolute; inset:0; z-index:1; background:#000; background-size:cover; background-position:center; transition:opacity .5s ease;}
+  #bgtint{position:absolute; inset:0; z-index:2; pointer-events:none; transition:background .8s ease;}
   #bgcap{position:absolute; top:14px; left:16px; z-index:5; font-size:12px; letter-spacing:.15em;
     color:rgba(232,220,192,.45); text-shadow:0 1px 4px #000;}
   /* 立ち絵ステージ（FGO式・縦画面・キャラ自動配置・話者スポットライト） */
@@ -134,6 +135,7 @@
 <body>
 <div id="app">
   <div id="bg"></div>
+  <div id="bgtint"></div>
   <div id="bgcap"></div>
   <div id="stage"></div>
   <div id="fx"></div>
@@ -197,6 +199,29 @@ const MOOD = {
   dawn:'linear-gradient(160deg,#2a2018,#181410 60%,#0a0806)',
   default:'linear-gradient(160deg,#1a1008,#0a0604)'
 };
+// 背景画像（場所キャプションで割り当て。該当外はムードグラデにフォールバック）
+const BG_IMG={hall:'assets/bg/hall.jpg', chamber:'assets/bg/chamber.jpg', fengyi:'assets/bg/fengyi.jpg'};
+const VIGNETTE='linear-gradient(180deg, rgba(6,4,3,.30) 0%, rgba(6,4,3,0) 20%, rgba(6,4,3,0) 46%, rgba(6,4,3,.5) 80%, rgba(6,4,3,.88) 100%)';
+const TINT={ warm:'rgba(48,20,8,.22)', cool:'rgba(10,16,32,.30)', fire:'rgba(64,16,6,.26)', night:'rgba(8,10,30,.34)', dawn:'rgba(46,30,16,.18)', default:'rgba(20,12,8,.20)' };
+function pickBg(cap){
+  const c=cap||'';
+  if(/鳳儀亭|荷花|池/.test(c)) return 'fengyi';
+  if(/大広間|広間/.test(c)) return 'hall';
+  if(/私室|居室|書斎|文書庫|奥院|閨|寝/.test(c)) return 'chamber';
+  return null;
+}
+function setBg(cap, mood){
+  const key=pickBg(cap); const bg=E('bg'), tint=E('bgtint');
+  if(key){
+    bg.style.background='#000'; bg.style.backgroundImage="url('"+BG_IMG[key]+"')";
+    bg.style.backgroundSize='cover'; bg.style.backgroundPosition='center';
+    const t=TINT[mood]||TINT.default;
+    tint.style.background=VIGNETTE+', linear-gradient(0deg,'+t+','+t+')';
+  } else {
+    bg.style.backgroundImage='none'; bg.style.background=MOOD[mood]||MOOD.default;
+    tint.style.background='none';
+  }
+}
 const CHARMETA = {
   '董卓':{c:'#7a5e1e',bg:'linear-gradient(180deg,#5a4418,#3a2c10)'},
   '貂蝉':{c:'#fff',bg:'linear-gradient(180deg,#9E2B25,#6e1d1a)'},
@@ -254,7 +279,7 @@ function go(id){
 function render(){
   if(idx>=node.length){ return; }
   const s=node[idx];
-  if(s.t==='bg'){ E('bg').style.background=MOOD[s.mood]||MOOD.default; E('bgcap').textContent=s.bg||''; clearStage(); idx++; return render(); }
+  if(s.t==='bg'){ setBg(s.bg, s.mood); E('bgcap').textContent=s.bg||''; clearStage(); idx++; return render(); }
   if(s.t==='sprite'){ showSprite(s.key); idx++; return render(); }
   if(s.t==='hide'){ clearStage(); idx++; return render(); }
   if(s.t==='fx'){ doFx(s.fx); idx++; return render(); }
