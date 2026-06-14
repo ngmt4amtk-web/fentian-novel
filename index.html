@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>焚天 ─ 相国董卓伝</title>
+<style>
+  :root{
+    --black:#0E0B0A; --gold:#B8923C; --crimson:#9E2B25; --crimson2:#C8413B;
+    --silk:#E8DCC0; --ivory:#C9BFA8; --jade:#3E8E7E;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; background:#000; overflow:hidden;
+    font-family:"Hiragino Mincho ProN","Yu Mincho",serif; color:var(--silk);}
+  #app{position:relative; width:100vw; height:100dvh; height:100vh; overflow:hidden; background:#000;}
+  /* 背景 */
+  #bg{position:absolute; inset:0; transition:background 1.2s ease; z-index:1;}
+  #bgcap{position:absolute; top:14px; left:16px; z-index:5; font-size:12px; letter-spacing:.15em;
+    color:rgba(232,220,192,.45); text-shadow:0 1px 4px #000;}
+  /* 立ち絵 */
+  .sprite{position:absolute; bottom:0; height:88%; z-index:3; opacity:0;
+    transition:opacity .5s ease, transform .5s ease; pointer-events:none;
+    filter:drop-shadow(0 0 30px rgba(0,0,0,.7));}
+  .sprite img{height:100%; width:auto; display:block;}
+  .sprite.show{opacity:1;}
+  #sp-left{left:2%; transform:translateX(-30px);}
+  #sp-center{left:50%; transform:translateX(-50%) translateY(20px);}
+  #sp-right{right:2%; transform:translateX(30px);}
+  #sp-left.show{transform:translateX(0);}
+  #sp-center.show{transform:translateX(-50%) translateY(0);}
+  #sp-right.show{transform:translateX(0);}
+  /* 演出 */
+  #fx{position:absolute; inset:0; z-index:6; pointer-events:none; opacity:0;}
+  #fx.flash{background:#fff; animation:flash .45s ease;}
+  #fx.cutin{background:radial-gradient(circle, transparent 40%, rgba(158,43,37,.5)); animation:flash .5s ease;}
+  @keyframes flash{0%{opacity:0;}20%{opacity:.9;}100%{opacity:0;}}
+  #veil{position:absolute; inset:0; z-index:6; background:#000; opacity:0; pointer-events:none; transition:opacity .6s ease;}
+  /* ゲージ */
+  #gauges{position:absolute; top:0; right:0; height:100%; z-index:7; display:flex; flex-direction:column;
+    justify-content:center; gap:10px; padding:0 8px; pointer-events:none;}
+  .g{width:9px; height:78px; border-radius:5px; background:rgba(255,255,255,.06);
+    position:relative; overflow:hidden; box-shadow:inset 0 0 3px rgba(0,0,0,.6);}
+  .g .fill{position:absolute; bottom:0; left:0; width:100%; transition:height .5s ease, box-shadow .3s;}
+  .g.flash .fill{box-shadow:0 0 12px 3px currentColor;}
+  .g .lab{position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); font-size:9px;
+    color:rgba(232,220,192,.5); white-space:nowrap;}
+  #g-diaochan .fill{background:var(--crimson2); color:var(--crimson2);}
+  #g-rogan .fill{background:#C8662B; color:#C8662B;}
+  #g-liju .fill{background:#5B7C9E; color:#5B7C9E;}
+  #g-roken .fill{background:#B89AC8; color:#B89AC8;}
+  /* テキスト窓 */
+  #win{position:absolute; left:0; right:0; bottom:0; z-index:8; min-height:30%; padding:18px 26px 30px;
+    background:linear-gradient(to top, rgba(10,8,7,.96) 60%, rgba(10,8,7,.0));
+    border-top:1px solid rgba(184,146,60,.25); cursor:pointer;}
+  #name{display:inline-block; font-size:15px; font-weight:bold; padding:2px 14px; margin-bottom:8px;
+    border-radius:3px 3px 0 0; color:#fff; letter-spacing:.08em; min-height:8px;}
+  #text{font-size:clamp(15px,2.2vw,19px); line-height:1.85; color:var(--silk); min-height:3.2em;
+    text-shadow:0 1px 3px #000;}
+  #text.narrate{color:var(--ivory); font-style:normal;}
+  #text .mark{color:var(--crimson2); margin-right:.4em;}
+  #next{position:absolute; right:22px; bottom:10px; color:var(--gold); font-size:13px; animation:blink 1.2s infinite;}
+  @keyframes blink{50%{opacity:.2;}}
+  /* 選択肢 */
+  #choices{position:absolute; inset:0; z-index:9; display:none; flex-direction:column;
+    justify-content:center; align-items:center; gap:14px; padding:24px;
+    background:rgba(10,8,7,.55); backdrop-filter:blur(2px);}
+  .ch{width:min(680px,92%); padding:15px 20px; cursor:pointer; color:var(--silk); font-size:clamp(14px,2vw,17px);
+    line-height:1.5; text-align:center; background:linear-gradient(180deg,rgba(20,14,12,.95),rgba(10,8,7,.95));
+    border:1px solid rgba(184,146,60,.4); border-radius:4px; transition:.2s;}
+  .ch:hover,.ch:active{border-color:var(--crimson2); box-shadow:0 0 16px rgba(200,65,59,.4); color:#fff;}
+  /* タイトル/エンド */
+  #title,#endcard{position:absolute; inset:0; z-index:12; display:flex; flex-direction:column;
+    justify-content:center; align-items:center; text-align:center; padding:30px;
+    background:radial-gradient(ellipse at center, #2a0f0a 0%, #0a0605 70%, #000 100%);}
+  #endcard{display:none; background:radial-gradient(ellipse at center,#1a1410 0%,#000 80%);}
+  .logo{font-size:clamp(46px,12vw,96px); font-weight:bold; letter-spacing:.12em; color:var(--gold);
+    text-shadow:0 0 30px rgba(184,146,60,.4), 0 4px 8px #000;
+    background:linear-gradient(180deg,#E8C97A,#B8923C 50%,#6e5520); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  .sub{margin-top:14px; font-size:clamp(13px,3vw,18px); color:var(--silk); letter-spacing:.18em;}
+  .sub2{margin-top:6px; font-size:clamp(11px,2.4vw,14px); color:rgba(232,220,192,.6); letter-spacing:.1em;}
+  .btn{margin-top:42px; padding:13px 40px; cursor:pointer; font-size:17px; letter-spacing:.2em; color:var(--gold);
+    border:1px solid var(--gold); border-radius:3px; background:rgba(184,146,60,.06); transition:.25s;}
+  .btn:hover,.btn:active{background:var(--gold); color:var(--black);}
+  #endtitle{font-size:clamp(30px,8vw,58px); font-weight:bold; letter-spacing:.1em; margin-bottom:10px;}
+  #endname{font-size:14px; letter-spacing:.3em; color:var(--gold); margin-bottom:20px;}
+  #endbody{font-size:14px; line-height:2; color:var(--ivory); max-width:620px;}
+  .hint{position:absolute; bottom:26px; font-size:11px; color:rgba(232,220,192,.4); letter-spacing:.2em;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bg"></div>
+  <div id="bgcap"></div>
+  <div class="sprite" id="sp-left"></div>
+  <div class="sprite" id="sp-center"></div>
+  <div class="sprite" id="sp-right"></div>
+  <div id="fx"></div>
+  <div id="veil"></div>
+  <div id="gauges">
+    <div class="g" id="g-diaochan"><div class="fill"></div><span class="lab">貂蝉</span></div>
+    <div class="g" id="g-rogan"><div class="fill"></div><span class="lab">嫉妬</span></div>
+    <div class="g" id="g-liju"><div class="fill"></div><span class="lab">李儒</span></div>
+    <div class="g" id="g-roken"><div class="fill"></div><span class="lab">露見</span></div>
+  </div>
+  <div id="win">
+    <span id="name"></span>
+    <div id="text"></div>
+    <span id="next">▼</span>
+  </div>
+  <div id="choices"></div>
+
+  <div id="title">
+    <div class="logo">焚天</div>
+    <div class="sub">刺客を、落とせ。── 力こそ、正義。</div>
+    <div class="sub2">相国董卓伝 ／ 立ち絵付きノベルゲーム</div>
+    <div class="btn" id="startbtn">物語を始める</div>
+    <div class="hint">あなた＝董卓。送り込まれた刺客・貂蝉を落とせ。</div>
+  </div>
+  <div id="endcard">
+    <div id="endtitle"></div>
+    <div id="endname"></div>
+    <div id="endbody"></div>
+    <div class="btn" id="restartbtn">タイトルへ</div>
+  </div>
+</div>
+
+<script src="scenes.js"></script>
+<script>
+const MOOD = {
+  warm:'linear-gradient(160deg,#2a120c,#150a08 60%,#070403)',
+  cool:'linear-gradient(160deg,#0c1320,#0a0e16 60%,#05070c)',
+  fire:'linear-gradient(0deg,#4a1505,#1a0805 70%,#0a0402)',
+  night:'linear-gradient(160deg,#10101a,#08080c 70%,#000)',
+  dawn:'linear-gradient(160deg,#2a2018,#181410 60%,#0a0806)',
+  default:'linear-gradient(160deg,#1a1008,#0a0604)'
+};
+const CHARMETA = {
+  '董卓':{c:'#7a5e1e',bg:'linear-gradient(180deg,#5a4418,#3a2c10)'},
+  '貂蝉':{c:'#fff',bg:'linear-gradient(180deg,#9E2B25,#6e1d1a)'},
+  '呂布':{c:'#fff',bg:'linear-gradient(180deg,#5a5650,#3a3733)'},
+  '王允':{c:'#fff',bg:'linear-gradient(180deg,#5a4a66,#382e42)'},
+  '李儒':{c:'#cdd6e2',bg:'linear-gradient(180deg,#2E3A4A,#1c2530)'},
+  '李粛':{c:'#e6e6e6',bg:'linear-gradient(180deg,#4a4e52,#303336)'},
+  '蔡邕':{c:'#fff',bg:'linear-gradient(180deg,#5a544a,#383530)'},
+  '童子たち':{c:'#ddd',bg:'linear-gradient(180deg,#3a3a40,#26262a)'},
+};
+const ENDINGS = {
+  BIYOKU:{title:'比翼',name:'TRUE ─ 真・生存エンド',body:'力で獲った心が、たまたま牙を返さなかっただけよ。──傍らに、嘘か本当か確かめ切れぬ刃を抱いた女がいる。その危うい、最良の勝利。'},
+  KOOU:{title:'孤王',name:'代償生存エンド',body:'貂蝉は落とせた。だが無双の臣を、女ひとりのために砕いた。喪失を覚えた、孤独な獣の王。'},
+  FENTIAN:{title:'焚天',name:'BAD ─ 史実死エンド',body:'落とせなかった。連環計は成り、宮門で呂布の戟が咽喉を貫く。力の正義は、陰謀に殺された。天を焚いた火は、灯一つ残して消えた。'},
+  RAKKA:{title:'落花',name:'悲劇恋愛エンド',body:'心は得た。だが罠を読み切れず──貂蝉が刃の前に身を投げた。落とした花は、散ることでしか、わしを救えなかった。'},
+};
+// エンディング分岐（閾値・友好度を見て決定）
+function resolveEnding(f, intent){
+  // 貂蝉好感度が低ければ何をしても史実死（連環成立）
+  if(f.diaochan <= 2) return 'FENTIAN';
+  // 力で討つ：落とせていれば孤王、落とせていなければ史実死
+  if(intent === 'kill') return f.diaochan >= 3 ? 'KOOU' : 'FENTIAN';
+  // 対峙・和解：落とし切り×罠を見抜けば比翼、見抜けなければ落花
+  if(f.diaochan >= 6 && (f.roken >= 3 || f.liju >= 3)) return 'BIYOKU';
+  return 'RAKKA';
+}
+const GMAX = {diaochan:12, rogan:8, liju:6, roken:8};
+
+const E = id=>document.getElementById(id);
+let flags, node, idx, intent, sprites;
+
+function start(){
+  flags={diaochan:0,rogan:0,liju:0,roken:0}; intent=null;
+  sprites={left:null,center:null,right:null};
+  ['left','center','right'].forEach(p=>E('sp-'+p).classList.remove('show'));
+  updateGauges(false);
+  E('title').style.display='none'; E('endcard').style.display='none';
+  go('prologue');
+}
+function go(id){
+  if(id==='__resolve_reconcile__'){ return ending(resolveEnding(flags,'reconcile')); }
+  if(id==='__resolve_kill__'){ return ending(resolveEnding(flags,'kill')); }
+  if(!SCENES[id]){ console.warn('missing node',id); return ending('FENTIAN'); }
+  node=SCENES[id]; idx=0; render();
+}
+function render(){
+  if(idx>=node.length){ return; }
+  const s=node[idx];
+  if(s.t==='bg'){ E('bg').style.background=MOOD[s.mood]||MOOD.default; E('bgcap').textContent=s.bg||''; idx++; return render(); }
+  if(s.t==='sprite'){ showSprite(s.key,s.pos||'center'); idx++; return render(); }
+  if(s.t==='hide'){ ['left','center','right'].forEach(p=>{E('sp-'+p).classList.remove('show');}); idx++; return render(); }
+  if(s.t==='fx'){ doFx(s.fx); idx++; return render(); }
+  if(s.t==='jump'){ return go(s.goto); }
+  if(s.t==='ending'){ return ending(s.id); }
+  if(s.t==='choice'){ return showChoices(s.options||[]); }
+  if(s.t==='say'){ say(s.name||'', s.text||''); return; }
+  if(s.t==='narrate'){ narrate(s.text||''); return; }
+  idx++; return render();
+}
+function advance(){
+  if(E('choices').style.display==='flex') return;
+  idx++; render();
+}
+function say(name,text){
+  const meta=CHARMETA[name]||{c:'#fff',bg:'rgba(60,50,40,.9)'};
+  const n=E('name'); n.textContent=name; n.style.background=meta.bg; n.style.color=meta.c; n.style.visibility='visible';
+  const t=E('text'); t.classList.remove('narrate'); t.innerHTML=esc(text);
+  E('next').style.display='inline';
+}
+function narrate(text){
+  E('name').style.visibility='hidden';
+  const t=E('text'); t.classList.add('narrate'); t.innerHTML='<span class="mark">▷</span>'+esc(text);
+  E('next').style.display='inline';
+}
+function showSprite(key,pos){
+  // 同キャラは同位置を置換。新規はpos指定位置。
+  const el=E('sp-'+pos);
+  if(!key){ el.classList.remove('show'); sprites[pos]=null; return; }
+  const img=new Image(); img.src='assets/sprites/'+key+'.png';
+  el.innerHTML=''; el.appendChild(img); sprites[pos]=key;
+  requestAnimationFrame(()=>el.classList.add('show'));
+}
+function doFx(fx){
+  const el=E('fx');
+  if(fx==='blackout'||fx==='fade'){ const v=E('veil'); v.style.opacity= fx==='blackout'?'1':'.6'; setTimeout(()=>v.style.opacity='0',700); return; }
+  el.className=''; void el.offsetWidth; el.classList.add(fx==='cutin'?'cutin':'flash');
+}
+function showChoices(opts){
+  E('next').style.display='none';
+  const c=E('choices'); c.innerHTML=''; c.style.display='flex';
+  opts.forEach(o=>{
+    const b=document.createElement('div'); b.className='ch'; b.textContent=o.text;
+    b.onclick=(ev)=>{ ev.stopPropagation();
+      const d=o.d||{}; let changed=[];
+      for(const k in d){ if(d[k]){ flags[k]=(flags[k]||0)+d[k]; changed.push(k);} }
+      updateGauges(true,changed);
+      c.style.display='none';
+      go(o.goto);
+    };
+    c.appendChild(b);
+  });
+}
+function updateGauges(flash,changed){
+  ['diaochan','rogan','liju','roken'].forEach(k=>{
+    const g=E('g-'+k); const pct=Math.max(0,Math.min(100, (flags[k]/GMAX[k])*100 ));
+    g.querySelector('.fill').style.height=pct+'%';
+    if(flash && changed && changed.includes(k)){ g.classList.add('flash'); setTimeout(()=>g.classList.remove('flash'),700); }
+  });
+}
+function ending(id){
+  const e=ENDINGS[id]||ENDINGS.FENTIAN;
+  E('endtitle').textContent='【'+e.title+'】';
+  E('endname').textContent=e.name;
+  E('endbody').textContent=e.body;
+  E('endcard').style.display='flex';
+}
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+E('win').addEventListener('click',advance);
+document.addEventListener('keydown',e=>{ if(e.key===' '||e.key==='Enter') advance(); });
+E('startbtn').onclick=start;
+E('restartbtn').onclick=()=>{ E('endcard').style.display='none'; E('title').style.display='flex'; };
+// SCENES未ロード時の保険
+if(typeof SCENES==='undefined'){ window.SCENES={}; }
+</script>
+</body>
+</html>
