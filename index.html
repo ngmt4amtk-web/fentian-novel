@@ -17,18 +17,17 @@
   #bg{position:absolute; inset:0; transition:background 1.2s ease; z-index:1;}
   #bgcap{position:absolute; top:14px; left:16px; z-index:5; font-size:12px; letter-spacing:.15em;
     color:rgba(232,220,192,.45); text-shadow:0 1px 4px #000;}
-  /* 立ち絵 */
-  .sprite{position:absolute; bottom:0; height:90%; z-index:3; opacity:0;
-    transition:opacity .5s ease, transform .5s ease; pointer-events:none;
-    filter:drop-shadow(0 10px 22px rgba(0,0,0,.55));}
-  .sprite img{height:100%; width:auto; display:block;}
-  .sprite.show{opacity:1;}
-  #sp-left{left:2%; transform:translateX(-30px);}
-  #sp-center{left:50%; transform:translateX(-50%) translateY(20px);}
-  #sp-right{right:2%; transform:translateX(30px);}
-  #sp-left.show{transform:translateX(0);}
-  #sp-center.show{transform:translateX(-50%) translateY(0);}
-  #sp-right.show{transform:translateX(0);}
+  /* 立ち絵ステージ（FGO式・縦画面・キャラ自動配置・話者スポットライト） */
+  #stage{position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden;}
+  .sprite{position:absolute; bottom:0; left:50%; opacity:0; will-change:transform,opacity,filter;
+    transform:translateX(-50%) translateY(16px);
+    transition:opacity .45s ease, transform .45s ease, filter .35s ease, height .4s ease, left .45s ease;
+    filter:drop-shadow(0 12px 22px rgba(0,0,0,.5));}
+  .sprite img{height:100%; width:auto; display:block; transform-origin:bottom center; transition:transform .35s ease;}
+  .sprite.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .sprite.dim{filter:brightness(.45) saturate(.82) drop-shadow(0 12px 22px rgba(0,0,0,.55));}
+  .sprite.dim img{transform:scale(.94);}
+  .sprite.spot img{transform:scale(1);}
   /* 演出 */
   #fx{position:absolute; inset:0; z-index:6; pointer-events:none; opacity:0;}
   #fx.flash{background:#fff; animation:flash .45s ease;}
@@ -95,15 +94,48 @@
   #endbody{font-size:14px; line-height:2; color:var(--ivory); max-width:620px;}
   .hint{position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 22px); font-size:11px;
     color:rgba(232,220,192,.45); letter-spacing:.2em; padding:0 24px;}
+  /* FGO式HUD（オート/スキップ/ログ/メニュー） */
+  #hud{position:absolute; top:calc(env(safe-area-inset-top,0px) + 9px); right:calc(env(safe-area-inset-right,0px) + 10px);
+    z-index:10; display:none; gap:7px; align-items:center;}
+  #hud.on{display:flex;}
+  .hbtn{pointer-events:auto; cursor:pointer; font-size:11px; font-weight:bold; letter-spacing:.1em; color:var(--silk);
+    min-width:30px; text-align:center; padding:6px 11px; border:1px solid rgba(184,146,60,.5); border-radius:15px;
+    background:rgba(10,8,7,.55); backdrop-filter:blur(3px); transition:.18s; user-select:none; line-height:1;}
+  .hbtn:active{transform:scale(.94);}
+  .hbtn.active{background:var(--gold); color:var(--black); border-color:var(--gold); box-shadow:0 0 12px rgba(184,146,60,.45);}
+  /* オーバーレイ共通（ログ／メニュー） */
+  .overlay{position:absolute; inset:0; z-index:11; display:none; align-items:center; justify-content:center;
+    padding:calc(env(safe-area-inset-top,0px) + 46px) 16px calc(env(safe-area-inset-bottom,0px) + 30px);
+    background:rgba(6,4,3,.8); backdrop-filter:blur(4px);}
+  .overlay.on{display:flex;}
+  .ovpanel{width:min(560px,95%); max-height:100%; display:flex; flex-direction:column;
+    background:linear-gradient(180deg,rgba(18,13,10,.97),rgba(9,6,5,.99));
+    border:1px solid rgba(184,146,60,.4); border-radius:15px; overflow:hidden;
+    box-shadow:0 16px 50px rgba(0,0,0,.7);}
+  .ovhead{padding:15px 20px; font-size:15px; font-weight:bold; letter-spacing:.25em; color:var(--gold);
+    border-bottom:1px solid rgba(184,146,60,.25);}
+  #logbody{overflow-y:auto; -webkit-overflow-scrolling:touch; padding:4px 20px 16px;}
+  .logrow{padding:11px 0; border-bottom:1px solid rgba(184,146,60,.1); font-size:14px; line-height:1.7;}
+  .logrow:last-child{border-bottom:none;}
+  .logrow .ln{display:block; font-size:11px; color:var(--gold); letter-spacing:.12em; margin-bottom:3px;}
+  .logrow .lt{color:var(--silk);}
+  .logrow.nr .lt{color:var(--ivory);}
+  .mitem{padding:16px 22px; cursor:pointer; font-size:15px; color:var(--silk); letter-spacing:.08em;
+    border-bottom:1px solid rgba(184,146,60,.12); transition:.16s;}
+  .mitem:active{background:rgba(184,146,60,.16);}
+  .ovclose{padding:15px; text-align:center; cursor:pointer; font-size:14px; letter-spacing:.2em; color:var(--gold);
+    background:rgba(184,146,60,.08);}
+  .ovclose:active{background:rgba(184,146,60,.2);}
+  /* ウインドウ非表示モード（立ち絵を眺める／次タップで復帰） */
+  #app.hideui #win, #app.hideui #hud, #app.hideui #gauges, #app.hideui #bgcap{opacity:0; pointer-events:none;}
+  #win,#hud,#gauges,#bgcap{transition:opacity .3s ease;}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="bg"></div>
   <div id="bgcap"></div>
-  <div class="sprite" id="sp-left"></div>
-  <div class="sprite" id="sp-center"></div>
-  <div class="sprite" id="sp-right"></div>
+  <div id="stage"></div>
   <div id="fx"></div>
   <div id="veil"></div>
   <div id="gauges">
@@ -118,6 +150,27 @@
     <span id="next">▼</span>
   </div>
   <div id="choices"></div>
+
+  <!-- FGO式HUD（プレイ中のみ表示） -->
+  <div id="hud">
+    <div class="hbtn" id="b-auto">AUTO</div>
+    <div class="hbtn" id="b-skip">SKIP</div>
+    <div class="hbtn" id="b-log">LOG</div>
+    <div class="hbtn" id="b-menu">☰</div>
+  </div>
+  <!-- バックログ -->
+  <div id="log" class="overlay"><div class="ovpanel">
+    <div class="ovhead">ログ</div><div id="logbody"></div><div class="ovclose" id="log-close">閉じる</div>
+  </div></div>
+  <!-- メニュー -->
+  <div id="menu" class="overlay"><div class="ovpanel">
+    <div class="ovhead">メニュー</div>
+    <div class="mitem" id="m-speed">文字速度：速</div>
+    <div class="mitem" id="m-hide">ウインドウを隠す</div>
+    <div class="mitem" id="m-restart">最初から読む</div>
+    <div class="mitem" id="m-title">タイトルへ戻る</div>
+    <div class="ovclose" id="menu-close">閉じる</div>
+  </div></div>
 
   <div id="title">
     <div class="logo">焚天</div>
@@ -172,13 +225,22 @@ function resolveEnding(f, intent){
 }
 const GMAX = {diaochan:12, rogan:8, liju:6, roken:8};
 
+const NAME2CHAR={'董卓':'dongzhuo','貂蝉':'diaochan','呂布':'lvbu','王允':'wangyun','李儒':'liju','李粛':'lisu','蔡邕':'caiyong'};
+
 const E = id=>document.getElementById(id);
-let flags, node, idx, intent, sprites;
+let flags, node, idx, intent, currentSpeaker;
+let stage=[]; const stageEls={};
+// FGO式コントロール状態
+let auto=false, skip=false, skipTimer=null, autoTimer=null, hideUI=false, revealing=false, finishReveal=null, typeIv=null, history=[];
+const SPEEDS=[{n:'速',ms:14},{n:'中',ms:28},{n:'遅',ms:48}]; let speedIdx=0;
 
 function start(){
   flags={diaochan:0,rogan:0,liju:0,roken:0}; intent=null;
-  sprites={left:null,center:null,right:null};
-  ['left','center','right'].forEach(p=>E('sp-'+p).classList.remove('show'));
+  clearStage(); currentSpeaker=null;
+  setAuto(false); setSkip(false); setHideUI(false);
+  if(autoTimer){clearTimeout(autoTimer); autoTimer=null;} clearInterval(typeIv); revealing=false;
+  history=[]; E('hud').classList.add('on');
+  E('menu').classList.remove('on'); E('log').classList.remove('on');
   updateGauges(false);
   E('title').style.display='none'; E('endcard').style.display='none';
   go('prologue');
@@ -192,9 +254,9 @@ function go(id){
 function render(){
   if(idx>=node.length){ return; }
   const s=node[idx];
-  if(s.t==='bg'){ E('bg').style.background=MOOD[s.mood]||MOOD.default; E('bgcap').textContent=s.bg||''; idx++; return render(); }
-  if(s.t==='sprite'){ showSprite(s.key,s.pos||'center'); idx++; return render(); }
-  if(s.t==='hide'){ ['left','center','right'].forEach(p=>{E('sp-'+p).classList.remove('show');}); idx++; return render(); }
+  if(s.t==='bg'){ E('bg').style.background=MOOD[s.mood]||MOOD.default; E('bgcap').textContent=s.bg||''; clearStage(); idx++; return render(); }
+  if(s.t==='sprite'){ showSprite(s.key); idx++; return render(); }
+  if(s.t==='hide'){ clearStage(); idx++; return render(); }
   if(s.t==='fx'){ doFx(s.fx); idx++; return render(); }
   if(s.t==='jump'){ return go(s.goto); }
   if(s.t==='ending'){ return ending(s.id); }
@@ -204,27 +266,115 @@ function render(){
   idx++; return render();
 }
 function advance(){
-  if(E('choices').style.display==='flex') return;
+  if(hideUI){ setHideUI(false); return; }                          // 非表示モードはタップで復帰（進めない）
+  if(E('menu').classList.contains('on')||E('log').classList.contains('on')) return;
+  if(E('choices').style.display==='flex') return;                  // 選択肢表示中
+  if(E('title').style.display!=='none') return;                    // タイトル表示中
+  if(E('endcard').style.display==='flex') return;                  // エンド表示中
+  if(!node) return;
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+  if(revealing){ if(finishReveal) finishReveal(); return; }        // 表示中タップ＝全文を一気に出す
   idx++; render();
 }
 function say(name,text){
   const meta=CHARMETA[name]||{c:'#fff',bg:'rgba(60,50,40,.9)'};
   const n=E('name'); n.textContent=name; n.style.background=meta.bg; n.style.color=meta.c; n.style.visibility='visible';
-  const t=E('text'); t.classList.remove('narrate'); t.innerHTML=esc(text);
-  E('next').style.display='inline';
+  E('text').classList.remove('narrate');
+  history.push({name:name,text:text,nr:false});
+  typeLine('', text);
+  currentSpeaker=NAME2CHAR[name]||null; applySpotlight();
 }
 function narrate(text){
   E('name').style.visibility='hidden';
-  const t=E('text'); t.classList.add('narrate'); t.innerHTML='<span class="mark">▷</span>'+esc(text);
-  E('next').style.display='inline';
+  E('text').classList.add('narrate');
+  history.push({name:'',text:text,nr:true});
+  typeLine('<span class="mark">▷</span>', text);
+  currentSpeaker=null; applySpotlight();
 }
-function showSprite(key,pos){
-  // 同キャラは同位置を置換。新規はpos指定位置。
-  const el=E('sp-'+pos);
-  if(!key){ el.classList.remove('show'); sprites[pos]=null; return; }
-  const img=new Image(); img.src='assets/sprites/'+key+'.png';
-  el.innerHTML=''; el.appendChild(img); sprites[pos]=key;
-  requestAnimationFrame(()=>el.classList.add('show'));
+// ── タイプ送り（FGO操作感）：表示中タップで一気→次タップで進む ──
+function typeLine(prefix, text){
+  const t=E('text');
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+  clearInterval(typeIv);
+  t.innerHTML=prefix;
+  const span=document.createElement('span'); t.appendChild(span);
+  E('next').style.display='none';
+  revealing=true;
+  let i=0; const ms=skip?0:SPEEDS[speedIdx].ms;
+  const finish=()=>{ clearInterval(typeIv); span.textContent=text; revealing=false;
+    E('next').style.display='inline'; onLineDone(); };
+  finishReveal=finish;
+  if(ms<=0){ finish(); return; }
+  typeIv=setInterval(()=>{ i++; span.textContent=text.slice(0,i); if(i>=text.length) finish(); }, ms);
+}
+function onLineDone(){
+  if(skip) return;                                       // skipはskipTimerが進める
+  if(auto){ const len=(E('text').textContent||'').length; autoTimer=setTimeout(advance, 700+len*42); }
+}
+function setAuto(on){ auto=on; E('b-auto').classList.toggle('active',on);
+  if(!on && autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+  if(on && !revealing && node) onLineDone();
+}
+function setSkip(on){ skip=on; E('b-skip').classList.toggle('active',on);
+  if(skipTimer){ clearInterval(skipTimer); skipTimer=null; }
+  if(on){ skipTimer=setInterval(()=>{
+    if(E('menu').classList.contains('on')||E('log').classList.contains('on')||E('choices').style.display==='flex'||
+       E('title').style.display!=='none'||E('endcard').style.display==='flex'){ setSkip(false); return; }
+    advance();
+  }, 95); }
+}
+function setHideUI(on){ hideUI=on; E('app').classList.toggle('hideui',on); }
+function openLog(){
+  const b=E('logbody'); b.innerHTML='';
+  history.slice(-300).forEach(h=>{ const r=document.createElement('div'); r.className='logrow'+(h.nr?' nr':'');
+    r.innerHTML=(h.name?'<span class="ln">'+esc(h.name)+'</span>':'')+'<span class="lt">'+esc(h.text)+'</span>'; b.appendChild(r); });
+  E('log').classList.add('on'); requestAnimationFrame(()=>{ b.scrollTop=b.scrollHeight; });
+}
+// ── 立ち絵ステージング：showSprite=「そのキャラを舞台に乗せる」。位置はステージ人数から自動決定 ──
+const LAYOUT={1:{x:[50],h:76},2:{x:[23,77],h:67},3:{x:[15,50,85],h:56}};
+const STAGE_CAP=3;
+function charKey(k){ return k? String(k).split('_')[0] : null; }
+function ensureEl(ch){
+  let el=stageEls[ch];
+  if(!el){ el=document.createElement('div'); el.className='sprite'; el.dataset.char=ch;
+    el.appendChild(document.createElement('img')); E('stage').appendChild(el); stageEls[ch]=el; }
+  return el;
+}
+function removeEl(ch){ const el=stageEls[ch]; if(!el) return; el.classList.remove('show');
+  setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); },450); delete stageEls[ch]; }
+function clearStage(){ Object.keys(stageEls).forEach(removeEl); stage=[]; }
+function showSprite(key){
+  const ch=charKey(key); if(!ch) return;
+  const item=stage.find(s=>s.char===ch);
+  if(item){ item.key=key; }                       // 同キャラ＝表情だけ差し替え、位置は維持
+  else{
+    if(stage.length>=STAGE_CAP){                  // 上限超過は話者でない最古を退場
+      let i=stage.findIndex(s=>s.char!==currentSpeaker); if(i<0) i=0;
+      removeEl(stage.splice(i,1)[0].char);
+    }
+    stage.push({char:ch,key});
+  }
+  renderStage();
+}
+function renderStage(){
+  const n=Math.min(stage.length,STAGE_CAP); const L=LAYOUT[n]||LAYOUT[STAGE_CAP];
+  stage.forEach((s,i)=>{
+    const el=ensureEl(s.char); const img=el.querySelector('img');
+    const src='assets/sprites/'+s.key+'.png';
+    if(img.getAttribute('src')!==src){ img.src=src; }
+    el.style.left=L.x[i]+'%'; el.style.height=L.h+'%';
+    requestAnimationFrame(()=>el.classList.add('show'));
+  });
+  applySpotlight();
+}
+function applySpotlight(){
+  const lit = currentSpeaker && stage.some(s=>s.char===currentSpeaker);
+  stage.forEach(s=>{
+    const el=stageEls[s.char]; if(!el) return;
+    if(!lit){ el.classList.remove('dim','spot'); el.style.zIndex=4; }
+    else if(s.char===currentSpeaker){ el.classList.add('spot'); el.classList.remove('dim'); el.style.zIndex=6; }
+    else{ el.classList.add('dim'); el.classList.remove('spot'); el.style.zIndex=3; }
+  });
 }
 function doFx(fx){
   const el=E('fx');
@@ -232,6 +382,7 @@ function doFx(fx){
   el.className=''; void el.offsetWidth; el.classList.add(fx==='cutin'?'cutin':'flash');
 }
 function showChoices(opts){
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; } setSkip(false);
   E('next').style.display='none';
   const c=E('choices'); c.innerHTML=''; c.style.display='flex';
   opts.forEach(o=>{
@@ -254,6 +405,7 @@ function updateGauges(flash,changed){
   });
 }
 function ending(id){
+  setAuto(false); setSkip(false); E('hud').classList.remove('on');
   const e=ENDINGS[id]||ENDINGS.FENTIAN;
   E('endtitle').textContent='【'+e.title+'】';
   E('endname').textContent=e.name;
@@ -262,10 +414,25 @@ function ending(id){
 }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-E('win').addEventListener('click',advance);
+// 画面のどこをタップ/クリックしても次へ進む（選択肢・タイトル・エンドは上のガードで無効）
+E('app').addEventListener('click',advance);
 document.addEventListener('keydown',e=>{ if(e.key===' '||e.key==='Enter') advance(); });
-E('startbtn').onclick=start;
-E('restartbtn').onclick=()=>{ E('endcard').style.display='none'; E('title').style.display='flex'; };
+E('startbtn').onclick=(e)=>{ e.stopPropagation(); start(); };
+E('restartbtn').onclick=(e)=>{ e.stopPropagation(); E('endcard').style.display='none'; E('title').style.display='flex'; };
+// FGO式HUD／メニュー／ログの配線
+E('b-auto').onclick=e=>{ e.stopPropagation(); setAuto(!auto); };
+E('b-skip').onclick=e=>{ e.stopPropagation(); setSkip(!skip); };
+E('b-log').onclick=e=>{ e.stopPropagation(); openLog(); };
+E('b-menu').onclick=e=>{ e.stopPropagation(); E('menu').classList.add('on'); };
+E('log-close').onclick=e=>{ e.stopPropagation(); E('log').classList.remove('on'); };
+E('menu-close').onclick=e=>{ e.stopPropagation(); E('menu').classList.remove('on'); };
+E('m-speed').onclick=e=>{ e.stopPropagation(); speedIdx=(speedIdx+1)%SPEEDS.length; E('m-speed').textContent='文字速度：'+SPEEDS[speedIdx].n; };
+E('m-hide').onclick=e=>{ e.stopPropagation(); E('menu').classList.remove('on'); setHideUI(true); };
+E('m-restart').onclick=e=>{ e.stopPropagation(); E('menu').classList.remove('on'); start(); };
+E('m-title').onclick=e=>{ e.stopPropagation(); E('menu').classList.remove('on'); E('log').classList.remove('on');
+  setAuto(false); setSkip(false); E('hud').classList.remove('on');
+  E('endcard').style.display='none'; E('title').style.display='flex'; };
+['log','menu'].forEach(id=>{ E(id).onclick=e=>{ e.stopPropagation(); if(e.target===E(id)) E(id).classList.remove('on'); }; });
 // SCENES未ロード時の保険
 if(typeof SCENES==='undefined'){ window.SCENES={}; }
 </script>
