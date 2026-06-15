@@ -356,7 +356,7 @@ function narrate(text){
   E('name').style.visibility='hidden';
   E('text').classList.add('narrate');
   history.push({name:'',text:text,nr:true});
-  startLine('<span class="mark">▷</span>', text);
+  startLine('', text);
   currentSpeaker=null; applySpotlight();
 }
 // 文末（。！？）で改行を入れて1文1行のリズムに（読みやすさ）
