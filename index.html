@@ -81,7 +81,9 @@
     justify-content:center; align-items:center; text-align:center;
     padding:calc(env(safe-area-inset-top,0px) + 30px) 30px calc(env(safe-area-inset-bottom,0px) + 30px);
     background:radial-gradient(ellipse at center, #2a0f0a 0%, #0a0605 70%, #000 100%);}
-  #endcard{display:none; background:radial-gradient(ellipse at center,#1a1410 0%,#000 80%);}
+  #title{background:linear-gradient(180deg, rgba(8,5,4,.42) 0%, rgba(8,5,4,.30) 38%, rgba(8,5,4,.86) 100%), url('assets/title_kv.jpg'); background-size:cover; background-position:center;}
+  #endcard{display:none; background:radial-gradient(ellipse at center,#1a1410 0%,#000 80%); background-size:cover; background-position:center;}
+  #endcard .scrimwrap{position:relative; z-index:1;}
   .logo{font-size:clamp(46px,12vw,96px); font-weight:bold; letter-spacing:.12em; color:var(--gold);
     text-shadow:0 0 30px rgba(184,146,60,.4), 0 4px 8px #000;
     background:linear-gradient(180deg,#E8C97A,#B8923C 50%,#6e5520); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
@@ -200,14 +202,28 @@ const MOOD = {
   default:'linear-gradient(160deg,#1a1008,#0a0604)'
 };
 // 背景画像（場所キャプションで割り当て。該当外はムードグラデにフォールバック）
-const BG_IMG={hall:'assets/bg/hall.jpg', chamber:'assets/bg/chamber.jpg', fengyi:'assets/bg/fengyi.jpg'};
+const BG_IMG={
+  hall:'assets/bg/hall.jpg', chamber:'assets/bg/chamber.jpg', fengyi:'assets/bg/fengyi.jpg',
+  hokueki_dusk:'assets/bg/bg_hokueki_dusk.jpg', hokueki_night:'assets/bg/bg_hokueki_night.jpg',
+  hokueki_dawn:'assets/bg/bg_hokueki_dawn.jpg', corridor:'assets/bg/bg_corridor_night.jpg',
+  courtyard:'assets/bg/bg_courtyard_moon.jpg', meiwu:'assets/bg/bg_meiwu_gate_dawn.jpg',
+  street:'assets/bg/bg_changan_street.jpg'};
 const VIGNETTE='linear-gradient(180deg, rgba(6,4,3,.30) 0%, rgba(6,4,3,0) 20%, rgba(6,4,3,0) 46%, rgba(6,4,3,.5) 80%, rgba(6,4,3,.88) 100%)';
 const TINT={ warm:'rgba(48,20,8,.22)', cool:'rgba(10,16,32,.30)', fire:'rgba(64,16,6,.26)', night:'rgba(8,10,30,.34)', dawn:'rgba(46,30,16,.18)', default:'rgba(20,12,8,.20)' };
 function pickBg(cap){
   const c=cap||'';
+  if(/北掖門|未央殿/.test(c)){                         // クライマックス＝時間帯で出し分け
+    if(/黄昏|血/.test(c)) return 'hokueki_dusk';
+    if(/払暁|未明|暁|夜明|日の出|薄明|朝陽|朝/.test(c)) return 'hokueki_dawn';
+    return 'hokueki_night';
+  }
   if(/鳳儀亭|荷花|池/.test(c)) return 'fengyi';
   if(/大広間|広間/.test(c)) return 'hall';
-  if(/私室|居室|書斎|文書庫|奥院|閨|寝/.test(c)) return 'chamber';
+  if(/中庭/.test(c)) return 'courtyard';
+  if(/回廊/.test(c)) return 'corridor';
+  if(/出立|郿塢.{0,5}門/.test(c)) return 'meiwu';
+  if(/大通り|市曹|長安市|街道|晒/.test(c)) return 'street';
+  if(/私室|居室|書斎|文書庫|奥院|閨|寝|書庫|郿塢/.test(c)) return 'chamber';
   return null;
 }
 function setBg(cap, mood){
@@ -429,9 +445,12 @@ function updateGauges(flash,changed){
     if(flash && changed && changed.includes(k)){ g.classList.add('flash'); setTimeout(()=>g.classList.remove('flash'),700); }
   });
 }
+const CGM={BIYOKU:'cg_biyoku', KOOU:'cg_koou', FENTIAN:'cg_fentian', RAKKA:'cg_rakka'};
 function ending(id){
   setAuto(false); setSkip(false); E('hud').classList.remove('on');
   const e=ENDINGS[id]||ENDINGS.FENTIAN;
+  const cg=CGM[id]||CGM.FENTIAN;
+  E('endcard').style.background="linear-gradient(180deg, rgba(6,4,3,.30) 0%, rgba(6,4,3,.50) 42%, rgba(6,4,3,.93) 100%), url('assets/cg/"+cg+".jpg') center/cover";
   E('endtitle').textContent='【'+e.title+'】';
   E('endname').textContent=e.name;
   E('endbody').textContent=e.body;
