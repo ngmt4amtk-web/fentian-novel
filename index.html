@@ -59,8 +59,9 @@
     cursor:pointer; display:flex; flex-direction:column; overflow:hidden;}
   #name{align-self:flex-start; display:inline-block; font-size:clamp(13px,1.8vw,16px); font-weight:bold;
     padding:3px 15px; margin-bottom:9px; border-radius:4px; color:#fff; letter-spacing:.08em; min-height:8px;}
-  #text{font-size:clamp(16px,2.5vw,20px); line-height:1.8; color:var(--silk); text-shadow:0 1px 3px #000;
-    overflow:hidden; min-height:0; flex:1 1 auto; padding-right:2px;}
+  #text{font-size:clamp(16px,2.5vw,20px); line-height:1.78; color:var(--silk); text-shadow:0 1px 3px #000;
+    overflow:hidden; min-height:0; flex:1 1 auto; padding-right:2px;
+    white-space:pre-wrap; line-break:strict; word-break:normal; overflow-wrap:normal; letter-spacing:.02em;}
   #text.narrate{color:var(--ivory); font-style:normal;}
   #text .mark{color:var(--crimson2); margin-right:.4em;}
   #next{position:absolute; right:18px; bottom:9px; color:var(--gold); font-size:13px; animation:blink 1.2s infinite;}
@@ -270,6 +271,7 @@ let flags, node, idx, intent, currentSpeaker;
 let stage=[]; const stageEls={};
 // FGO式コントロール状態
 let auto=false, skip=false, skipTimer=null, autoTimer=null, hideUI=false, revealing=false, finishReveal=null, typeIv=null, history=[];
+let pages=[], pageIdx=0, curPrefix='';
 const SPEEDS=[{n:'瞬間',ms:0},{n:'速',ms:14},{n:'中',ms:28},{n:'遅',ms:48}]; let speedIdx=0;
 
 function start(){
@@ -277,7 +279,7 @@ function start(){
   clearStage(); currentSpeaker=null;
   setAuto(false); setSkip(false); setHideUI(false);
   if(autoTimer){clearTimeout(autoTimer); autoTimer=null;} clearInterval(typeIv); revealing=false;
-  history=[]; E('hud').classList.add('on');
+  pages=[]; pageIdx=0; history=[]; E('hud').classList.add('on');
   E('menu').classList.remove('on'); E('log').classList.remove('on');
   updateGauges(false);
   E('title').style.display='none'; E('endcard').style.display='none';
@@ -312,6 +314,7 @@ function advance(){
   if(!node) return;
   if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
   if(revealing){ if(finishReveal) finishReveal(); return; }        // 表示中タップ＝全文を一気に出す
+  if(pageIdx < pages.length-1){ pageIdx++; typeLine(curPrefix, pages[pageIdx]); return; }  // 次ページ
   idx++; render();
 }
 function say(name,text){
@@ -319,40 +322,57 @@ function say(name,text){
   const n=E('name'); n.textContent=name; n.style.background=meta.bg; n.style.color=meta.c; n.style.visibility='visible';
   E('text').classList.remove('narrate');
   history.push({name:name,text:text,nr:false});
-  typeLine('', text);
+  startLine('', text);
   currentSpeaker=NAME2CHAR[name]||null; applySpotlight();
 }
 function narrate(text){
   E('name').style.visibility='hidden';
   E('text').classList.add('narrate');
   history.push({name:'',text:text,nr:true});
-  typeLine('<span class="mark">▷</span>', text);
+  startLine('<span class="mark">▷</span>', text);
   currentSpeaker=null; applySpotlight();
 }
-// 固定テキスト枠に収まるようフォントを自動縮小（スクロール禁止×見切れ禁止の両立）
-function fitText(t, span, text){
-  t.style.fontSize=''; t.style.lineHeight=''; span.textContent=text;
-  let size=parseFloat(getComputedStyle(t).fontSize)||18, g=0;
-  while(t.scrollHeight > t.clientHeight + 1 && size>11.5 && g<64){
-    size-=0.5; t.style.fontSize=size+'px';
-    t.style.lineHeight=(size<=15.5 ? '1.5' : '1.8');   // 縮む時は行間も詰めて収める
-    g++;
-  }
-  span.textContent='';
+// 文末（。！？）で改行を入れて1文1行のリズムに（読みやすさ）
+function formatLine(text){
+  return (text||'')
+    .replace(/([。！？]+[」』）)\]］】]*)/g,'$1\n')   // 文末＋閉じ括弧で改行
+    .replace(/[ 　]*\n[ 　]*/g,'\n')                 // 改行前後の空白を除去
+    .replace(/\n{2,}/g,'\n').replace(/\n+$/,'');
 }
-// ── タイプ送り（FGO操作感）：表示中タップで一気→次タップで進む ──
+// 固定枠に収まるページに分割（フォントは読みやすいまま・スクロール無し・見切れ無し）
+function paginate(formatted, prefix){
+  const t=E('text');
+  const fit=(s)=>{ t.innerHTML=prefix; const sp=document.createElement('span'); sp.textContent=s; t.appendChild(sp); return t.scrollHeight<=t.clientHeight+1; };
+  const out=[]; let rest=formatted, guard=0;
+  while(rest.length && guard++<60){
+    if(fit(rest)){ out.push(rest); rest=''; break; }
+    let lo=1, hi=rest.length, best=1;
+    while(lo<=hi){ const mid=(lo+hi)>>1; if(fit(rest.slice(0,mid))){ best=mid; lo=mid+1; } else hi=mid-1; }
+    const head=rest.slice(0,best);
+    const lb=Math.max(head.lastIndexOf('\n'),head.lastIndexOf('。'),head.lastIndexOf('！'),head.lastIndexOf('？'),head.lastIndexOf('、'));
+    const cut=(lb>=best*0.45)?lb+1:best;
+    out.push(rest.slice(0,cut).replace(/^\n+|\n+$/g,''));
+    rest=rest.slice(cut).replace(/^[\n 　]+/,'');
+  }
+  t.innerHTML='';
+  return out.length?out:[''];
+}
+function startLine(prefix, text){
+  curPrefix=prefix; pages=paginate(formatLine(text), prefix); pageIdx=0;
+  typeLine(curPrefix, pages[0]);
+}
+// ── タイプ送り：表示中タップで一気→次タップで次ページ/次行 ──
 function typeLine(prefix, text){
   const t=E('text');
   if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
   clearInterval(typeIv);
   t.innerHTML=prefix;
   const span=document.createElement('span'); t.appendChild(span);
-  fitText(t, span, text);                 // 固定枠に収まるようフォント自動縮小（スクロール無し・見切れ無し）
   E('next').style.display='none';
   revealing=true;
   let i=0; const ms=skip?0:SPEEDS[speedIdx].ms;
   const finish=()=>{ clearInterval(typeIv); span.textContent=text; revealing=false;
-    E('next').style.display='inline'; onLineDone(); };
+    E('next').textContent=(pageIdx<pages.length-1)?'▽':'▼'; E('next').style.display='inline'; onLineDone(); };
   finishReveal=finish;
   if(ms<=0){ finish(); return; }
   typeIv=setInterval(()=>{ i++; span.textContent=text.slice(0,i); if(i>=text.length) finish(); }, ms);
