@@ -132,12 +132,21 @@
   #win,#hud,#gauges,#bgcap{transition:opacity .3s ease;}
   /* 横画面（FGO風ワイド窓） */
   @media (orientation:landscape){
-    #win{ left:50%; transform:translateX(-50%); width:min(96%,1180px);
-      height:clamp(128px,42dvh,202px); bottom:calc(env(safe-area-inset-bottom, 0px) + 8px); padding:11px 30px 20px; border-radius:12px; }
-    #text{ font-size:clamp(14px,1.85vw,16px); line-height:1.62; }
-    #name{ font-size:clamp(12px,1.5vw,15px); margin-bottom:6px; }
+    /* FGO風：画面下端いっぱいの青い帯 */
+    #win{ left:0; right:0; transform:none; width:100%; bottom:0; border-radius:0;
+      height:clamp(118px,33dvh,186px); padding:20px clamp(22px,6vw,90px) 16px; overflow:visible;
+      background:linear-gradient(180deg, rgba(16,24,50,.22) 0%, rgba(12,19,42,.82) 24%, rgba(8,13,30,.95) 100%);
+      border:none; border-top:1.5px solid rgba(126,168,228,.55);
+      box-shadow:0 -8px 34px rgba(0,0,0,.5); }
+    /* 名前プレート：窓の左上端に乗る青タブ */
+    #name{ position:absolute; top:-14px; left:clamp(16px,5vw,80px); align-self:auto; display:inline-block;
+      background:linear-gradient(180deg,#31436f,#172242)!important; color:#fff!important;
+      border:1px solid rgba(126,168,228,.6); border-radius:6px; padding:4px 20px;
+      font-size:clamp(13px,1.7vw,17px); box-shadow:0 3px 10px rgba(0,0,0,.55); margin:0; }
+    /* 大きめの本文 */
+    #text{ font-size:clamp(17px,2.25vw,23px); line-height:1.68; letter-spacing:.03em; color:#f1ede2; overflow:hidden; }
     #gauges{ padding:calc(env(safe-area-inset-top, 0px) + 8px) 8px 0; gap:7px; }
-    .g{ height:50px; }
+    .g{ height:48px; }
   }
   /* 縦の時はFGO同様に横向きを促す */
   #rotate{position:absolute; top:calc(env(safe-area-inset-top, 0px) + 8px); left:50%; transform:translateX(-50%); z-index:13;
@@ -428,8 +437,8 @@ function openLog(){
   E('log').classList.add('on'); requestAnimationFrame(()=>{ b.scrollTop=b.scrollHeight; });
 }
 // ── 立ち絵ステージング：showSprite=「そのキャラを舞台に乗せる」。位置はステージ人数から自動決定 ──
-const LAYOUT_P={1:{x:[50],h:88},2:{x:[24,76],h:78},3:{x:[16,50,84],h:66}};   // 縦
-const LAYOUT_L={1:{x:[50],h:95},2:{x:[31,69],h:97},3:{x:[20,50,80],h:93}};   // 横（FGO風・全身横並び）
+const LAYOUT_P={1:{x:[50],h:88},2:{x:[24,76],h:78},3:{x:[16,50,84],h:66}};                         // 縦＝全身
+const LAYOUT_L={1:{x:[50],h:138,b:-40},2:{x:[28,72],h:132,b:-36},3:{x:[19,50,81],h:124,b:-30}};    // 横＝FGO風に拡大・腰上
 function curLayout(){ return matchMedia('(orientation:landscape)').matches ? LAYOUT_L : LAYOUT_P; }
 const STAGE_CAP=3;
 function charKey(k){ return k? String(k).split('_')[0] : null; }
@@ -462,7 +471,7 @@ function renderStage(){
     const el=ensureEl(s.char); const img=el.querySelector('img');
     const src='assets/sprites/'+s.key+'.png';
     if(img.getAttribute('src')!==src){ img.src=src; }
-    el.style.left=L.x[i]+'%'; el.style.height=L.h+'%';
+    el.style.left=L.x[i]+'%'; el.style.height=L.h+'%'; el.style.bottom=(L.b!=null?L.b:0)+'%';
     requestAnimationFrame(()=>el.classList.add('show'));
   });
   applySpotlight();
@@ -542,6 +551,15 @@ try{ matchMedia('(orientation:landscape)').addEventListener('change', refit); }c
 let _rezT; window.addEventListener('resize', ()=>{ clearTimeout(_rezT); _rezT=setTimeout(refit,160); });
 // SCENES未ロード時の保険
 if(typeof SCENES==='undefined'){ window.SCENES={}; }
+// 立ち絵・背景を先読み（表情切替の表示遅延を解消）
+(function preloadAll(){
+  try{
+    const ks=new Set();
+    for(const k in SCENES) for(const s of SCENES[k]) if(s&&s.t==='sprite'&&s.key) ks.add(s.key);
+    ks.forEach(k=>{ const i=new Image(); i.src='assets/sprites/'+k+'.png'; });
+    Object.values(BG_IMG).forEach(u=>{ const i=new Image(); i.src=u; });
+  }catch(_){}
+})();
 </script>
 </body>
 </html>
