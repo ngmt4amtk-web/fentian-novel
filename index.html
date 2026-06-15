@@ -62,8 +62,10 @@
   #text{font-size:clamp(16px,2.5vw,20px); line-height:1.78; color:var(--silk); text-shadow:0 1px 3px #000;
     overflow:hidden; min-height:0; flex:1 1 auto; padding-right:2px;
     white-space:pre-wrap; line-break:strict; word-break:normal; overflow-wrap:normal; letter-spacing:.02em;}
-  #text.narrate{color:var(--ivory); font-style:normal;}
+  /* 心の声（独白）＝クールなイタリックで"内なる声"と一目で分かるように */
+  #text.narrate{color:#aab6c9; font-style:italic; opacity:.96;}
   #text .mark{color:var(--crimson2); margin-right:.4em;}
+  #text.narrate .mark{color:#7d8ba3; font-style:normal;}
   #next{position:absolute; right:18px; bottom:9px; color:var(--gold); font-size:13px; animation:blink 1.2s infinite;}
   @keyframes blink{50%{opacity:.2;}}
   /* 選択肢 */
