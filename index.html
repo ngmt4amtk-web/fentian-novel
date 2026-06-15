@@ -36,8 +36,14 @@
   @keyframes flash{0%{opacity:0;}20%{opacity:.9;}100%{opacity:0;}}
   #veil{position:absolute; inset:0; z-index:6; background:#000; opacity:0; pointer-events:none; transition:opacity .6s ease;}
   /* ゲージ */
-  #gauges{position:absolute; top:0; right:0; height:100%; z-index:7; display:flex; flex-direction:column;
-    justify-content:flex-start; gap:10px; padding:calc(env(safe-area-inset-top,0px) + 13vh) 8px 0; pointer-events:none;}
+  #gauges{display:none;}  /* 常時表示は廃止＝メニュー内の友好度パネルで確認 */
+  /* メニュー内 友好度パネル */
+  #menu-status{padding:16px 22px 4px; display:flex; flex-direction:column; gap:11px;}
+  .strow{display:flex; align-items:center; gap:11px; font-size:13px; color:var(--silk); letter-spacing:.04em;}
+  .stlab{flex:0 0 104px; white-space:nowrap;}
+  .stbar{flex:1; height:9px; border-radius:5px; background:rgba(255,255,255,.08); overflow:hidden;
+    box-shadow:inset 0 0 3px rgba(0,0,0,.6);}
+  .stbar i{display:block; height:100%; border-radius:5px; transition:width .3s ease;}
   .g{width:9px; height:78px; border-radius:5px; background:rgba(255,255,255,.06);
     position:relative; overflow:hidden; box-shadow:inset 0 0 3px rgba(0,0,0,.6);}
   .g .fill{position:absolute; bottom:0; left:0; width:100%; transition:height .5s ease, box-shadow .3s;}
@@ -155,7 +161,7 @@
     display:none; align-items:center; gap:6px; padding:8px 15px; border-radius:20px; cursor:pointer;
     background:rgba(20,14,10,.92); border:1px solid rgba(184,146,60,.45); color:var(--gold);
     font-size:12px; letter-spacing:.05em; white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,.5);}
-  @media (orientation:portrait){ #rotate{display:flex;} }
+  /* 縦画面が主＝横向き案内ナグは出さない（横にすればFGO配置になるのは維持） */
 </style>
 </head>
 <body>
@@ -193,6 +199,7 @@
   <!-- メニュー -->
   <div id="menu" class="overlay"><div class="ovpanel">
     <div class="ovhead">メニュー</div>
+    <div id="menu-status"></div>
     <div class="mitem" id="m-speed">文字速度：瞬間</div>
     <div class="mitem" id="m-hide">ウインドウを隠す</div>
     <div class="mitem" id="m-restart">最初から読む</div>
@@ -368,7 +375,9 @@ function formatLine(text){
     .replace(/、/g,'、​')          // 読点の後ろだけ折返し可（語の途中で折らない）
     .replace(/([—─―]+)/g,'$1​')    // ダッシュの後ろも折返し可
     .replace(/([)）】])/g,'$1​')    // 閉じ括弧(ルビ等)の後ろも折返し可
-    .replace(/　/g,'　​');          // 全角スペースの後ろも折返し可
+    .replace(/　/g,'　​')           // 全角スペースの後ろも折返し可
+    .replace(/​+(?=[。、，．！？!?」』）】］｝・ー…])/g,'')  // 直後が行頭禁則文字なら折返し点を除去(「。」単独改行を防ぐ)
+    .replace(/​+\n/g,'\n');         // 改行直前の折返し点も除去
 }
 // 固定枠に収まるページに分割（フォントは読みやすいまま・スクロール無し・見切れ無し）
 function paginate(formatted, prefix){
@@ -519,6 +528,14 @@ function updateGauges(flash,changed){
     if(flash && changed && changed.includes(k)){ g.classList.add('flash'); setTimeout(()=>g.classList.remove('flash'),700); }
   });
 }
+// メニュー内の友好度パネル（ラベル付き・開いた時に描画）
+function renderStatus(){
+  const G=[['diaochan','貂蝉の好感度','#C8413B'],['rogan','呂布の嫉妬','#C8662B'],['liju','李儒の信頼','#5B7C9E'],['roken','連環の露見','#B89AC8']];
+  E('menu-status').innerHTML = G.map(g=>{
+    const pct=Math.max(0,Math.min(100, (((flags&&flags[g[0]])||0)/GMAX[g[0]])*100 ));
+    return '<div class="strow"><span class="stlab">'+g[1]+'</span><span class="stbar"><i style="width:'+pct+'%;background:'+g[2]+'"></i></span></div>';
+  }).join('');
+}
 const CGM={BIYOKU:'cg_biyoku', KOOU:'cg_koou', FENTIAN:'cg_fentian', RAKKA:'cg_rakka'};
 function ending(id){
   setAuto(false); setSkip(false); E('hud').classList.remove('on');
@@ -541,7 +558,7 @@ E('restartbtn').onclick=(e)=>{ e.stopPropagation(); E('endcard').style.display='
 E('b-auto').onclick=e=>{ e.stopPropagation(); setAuto(!auto); };
 E('b-skip').onclick=e=>{ e.stopPropagation(); setSkip(!skip); };
 E('b-log').onclick=e=>{ e.stopPropagation(); openLog(); };
-E('b-menu').onclick=e=>{ e.stopPropagation(); E('menu').classList.add('on'); };
+E('b-menu').onclick=e=>{ e.stopPropagation(); renderStatus(); E('menu').classList.add('on'); };
 E('log-close').onclick=e=>{ e.stopPropagation(); E('log').classList.remove('on'); };
 E('menu-close').onclick=e=>{ e.stopPropagation(); E('menu').classList.remove('on'); };
 E('m-speed').onclick=e=>{ e.stopPropagation(); speedIdx=(speedIdx+1)%SPEEDS.length; E('m-speed').textContent='文字速度：'+SPEEDS[speedIdx].n; };
