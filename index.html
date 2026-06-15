@@ -381,8 +381,19 @@ function paginate(formatted, prefix){
   t.innerHTML='';
   return out.length?out:[''];
 }
+// （）が複数ページに跨ったら、各ページを（…）で閉じ開きする（続きページが地の文化しないように）
+function bracketPages(pgs){
+  const out=[]; let carry=0;                    // 前ページから繰り越した未閉じ（の数
+  for(let pg of pgs){
+    let s='（'.repeat(carry)+pg, depth=0;
+    for(const ch of s){ if(ch==='（') depth++; else if(ch==='）'){ depth--; if(depth<0) depth=0; } }
+    if(depth>0) s=s+'）'.repeat(depth);
+    carry=depth; out.push(s);
+  }
+  return out;
+}
 function startLine(prefix, text){
-  curPrefix=prefix; curText=text; pages=paginate(formatLine(text), prefix); pageIdx=0;
+  curPrefix=prefix; curText=text; pages=bracketPages(paginate(formatLine(text), prefix)); pageIdx=0;
   typeLine(curPrefix, pages[0]);
 }
 // 画面回転/リサイズ時：立ち絵配置とテキストのページ割りを組み直す
@@ -390,7 +401,7 @@ function refit(){
   renderStage();
   if(curText!=null && node && E('title').style.display==='none' && E('endcard').style.display!=='flex'){
     const keep=pageIdx;
-    pages=paginate(formatLine(curText), curPrefix); pageIdx=Math.min(keep,pages.length-1);
+    pages=bracketPages(paginate(formatLine(curText), curPrefix)); pageIdx=Math.min(keep,pages.length-1);
     const t=E('text'); t.innerHTML=curPrefix; const sp=document.createElement('span'); sp.textContent=pages[pageIdx]; t.appendChild(sp);
     revealing=false; E('next').textContent=(pageIdx<pages.length-1)?'▽':'▼'; E('next').style.display='inline';
   }
