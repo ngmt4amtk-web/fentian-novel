@@ -140,12 +140,10 @@
     .g{ height:50px; }
   }
   /* 縦の時はFGO同様に横向きを促す */
-  #rotate{position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center;
-    background:radial-gradient(ellipse at center,#1c100a,#000 80%); color:var(--silk); text-align:center; padding:30px;}
-  #rotate .ic{font-size:56px; transform-origin:center; animation:rothint 2.4s ease-in-out infinite;}
-  #rotate .t1{margin-top:20px; font-size:19px; letter-spacing:.12em; font-weight:bold; color:var(--gold);}
-  #rotate .t2{margin-top:8px; font-size:13px; color:rgba(232,220,192,.6); letter-spacing:.08em;}
-  @keyframes rothint{0%,50%{transform:rotate(0);}75%,100%{transform:rotate(-90deg);}}
+  #rotate{position:absolute; top:calc(env(safe-area-inset-top, 0px) + 8px); left:50%; transform:translateX(-50%); z-index:13;
+    display:none; align-items:center; gap:6px; padding:8px 15px; border-radius:20px; cursor:pointer;
+    background:rgba(20,14,10,.92); border:1px solid rgba(184,146,60,.45); color:var(--gold);
+    font-size:12px; letter-spacing:.05em; white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,.5);}
   @media (orientation:portrait){ #rotate{display:flex;} }
 </style>
 </head>
@@ -204,7 +202,7 @@
     <div id="endbody"></div>
     <div class="btn" id="restartbtn">タイトルへ</div>
   </div>
-  <div id="rotate"><div class="ic">📱</div><div class="t1">横向きにしてね</div><div class="t2">FGOと同じ横画面でお楽しみください</div></div>
+  <div id="rotate">📱 横向きにするとFGO配置（タップで閉じる）</div>
 </div>
 
 <script src="scenes.js"></script>
@@ -538,6 +536,7 @@ E('m-title').onclick=e=>{ e.stopPropagation(); E('menu').classList.remove('on');
   setAuto(false); setSkip(false); E('hud').classList.remove('on');
   E('endcard').style.display='none'; E('title').style.display='flex'; };
 ['log','menu'].forEach(id=>{ E(id).onclick=e=>{ e.stopPropagation(); if(e.target===E(id)) E(id).classList.remove('on'); }; });
+E('rotate').onclick=(e)=>{ e.stopPropagation(); E('rotate').style.display='none'; };
 // 画面回転・リサイズで縦↔横レイアウトを組み直す
 try{ matchMedia('(orientation:landscape)').addEventListener('change', refit); }catch(_){}
 let _rezT; window.addEventListener('resize', ()=>{ clearTimeout(_rezT); _rezT=setTimeout(refit,160); });
