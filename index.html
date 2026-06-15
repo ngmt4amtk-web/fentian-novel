@@ -52,7 +52,7 @@
   #win{position:absolute; left:50%; transform:translateX(-50%);
     bottom:calc(env(safe-area-inset-bottom,0px) + 18px);
     width:min(92%,900px); z-index:8;
-    height:172px; height:clamp(172px,25dvh,232px); padding:14px 20px 28px;
+    height:184px; height:clamp(184px,27dvh,244px); padding:14px 20px 28px;
     background:linear-gradient(180deg, rgba(13,9,7,.90), rgba(7,5,4,.975));
     border:1px solid rgba(184,146,60,.32); border-radius:14px;
     box-shadow:0 12px 46px rgba(0,0,0,.62), inset 0 1px 0 rgba(184,146,60,.12);
@@ -60,10 +60,7 @@
   #name{align-self:flex-start; display:inline-block; font-size:clamp(13px,1.8vw,16px); font-weight:bold;
     padding:3px 15px; margin-bottom:9px; border-radius:4px; color:#fff; letter-spacing:.08em; min-height:8px;}
   #text{font-size:clamp(16px,2.5vw,20px); line-height:1.8; color:var(--silk); text-shadow:0 1px 3px #000;
-    overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; padding-right:3px;
-    scrollbar-width:thin; scrollbar-color:rgba(184,146,60,.4) transparent;}
-  #text::-webkit-scrollbar{width:5px;}
-  #text::-webkit-scrollbar-thumb{background:rgba(184,146,60,.4); border-radius:3px;}
+    overflow:hidden; min-height:0; flex:1 1 auto; padding-right:2px;}
   #text.narrate{color:var(--ivory); font-style:normal;}
   #text .mark{color:var(--crimson2); margin-right:.4em;}
   #next{position:absolute; right:18px; bottom:9px; color:var(--gold); font-size:13px; animation:blink 1.2s infinite;}
@@ -332,6 +329,17 @@ function narrate(text){
   typeLine('<span class="mark">▷</span>', text);
   currentSpeaker=null; applySpotlight();
 }
+// 固定テキスト枠に収まるようフォントを自動縮小（スクロール禁止×見切れ禁止の両立）
+function fitText(t, span, text){
+  t.style.fontSize=''; t.style.lineHeight=''; span.textContent=text;
+  let size=parseFloat(getComputedStyle(t).fontSize)||18, g=0;
+  while(t.scrollHeight > t.clientHeight + 1 && size>11.5 && g<64){
+    size-=0.5; t.style.fontSize=size+'px';
+    t.style.lineHeight=(size<=15.5 ? '1.5' : '1.8');   // 縮む時は行間も詰めて収める
+    g++;
+  }
+  span.textContent='';
+}
 // ── タイプ送り（FGO操作感）：表示中タップで一気→次タップで進む ──
 function typeLine(prefix, text){
   const t=E('text');
@@ -339,6 +347,7 @@ function typeLine(prefix, text){
   clearInterval(typeIv);
   t.innerHTML=prefix;
   const span=document.createElement('span'); t.appendChild(span);
+  fitText(t, span, text);                 // 固定枠に収まるようフォント自動縮小（スクロール無し・見切れ無し）
   E('next').style.display='none';
   revealing=true;
   let i=0; const ms=skip?0:SPEEDS[speedIdx].ms;
