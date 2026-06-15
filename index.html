@@ -70,7 +70,7 @@
     padding:3px 15px; margin-bottom:9px; border-radius:4px; color:#fff; letter-spacing:.08em; min-height:8px;}
   #text{font-size:clamp(16px,2.5vw,20px); line-height:1.78; color:var(--silk); text-shadow:0 1px 3px #000;
     overflow:hidden; min-height:0; flex:1 1 auto; padding-right:2px;
-    white-space:pre-wrap; line-break:strict; word-break:keep-all; overflow-wrap:anywhere; letter-spacing:.02em;}
+    white-space:pre-wrap; line-break:strict; word-break:normal; overflow-wrap:normal; letter-spacing:.02em;}
   /* 心の声（独白）＝クールなイタリックで"内なる声"と一目で分かるように */
   #text.narrate{color:#aab6c9; font-style:italic; opacity:.96;}
   #text .mark{color:var(--crimson2); margin-right:.4em;}
@@ -354,17 +354,11 @@ function narrate(text){
 }
 // 文末（。！？）で改行を入れて1文1行のリズムに（読みやすさ）
 function formatLine(text){
-  return (text||'')                                                       // 縦横とも文末で改行＝1文1行
-    .replace(/([。！？!?]+[」』）)\]］】]*)/g,'$1\n')                        // 文末(全角/半角!?)で改行
+  return (text||'')                                                       // 文末で改行＝1文1行
+    .replace(/([。！？!?]+[」』）)\]］】]*)/g,'$1\n')
     .replace(/[ 　]*\n[ 　]*/g,'\n')
     .replace(/\n{2,}/g,'\n').replace(/\n+$/,'')
-    .replace(/、/g,'、​')          // 読点の後ろだけ折返し可（語の途中で折らない）
-    .replace(/([—─―]+)/g,'$1​')    // ダッシュの後ろも折返し可
-    .replace(/([)）】])/g,'$1​')    // 閉じ括弧(ルビ等)の後ろも折返し可
-    .replace(/　/g,'　​')           // 全角スペースの後ろも折返し可
-    .replace(/​+(?=[。、，．！？!?」』）】］｝・ー…])/g,'')  // 直後が行頭禁則文字なら折返し点を除去
-    .replace(/​+\n/g,'\n')          // 改行直前の折返し点も除去
-    .replace(/([。、，．！？!?」』）】］｝・ー…])/g,'⁠$1'); // 行頭禁則文字の直前に結合子(描画時もここで折らせない＝「。」単独改行を根絶)
+    .replace(/([一-鿿々〆ヶ])(?=[一-鿿々〆ヶ])/g,'$1⁠'); // 隣接漢字を結合＝熟語(洛陽/血筋等)を語の途中で折らない。禁則(行頭の。等)はCSS line-break:strict が担保
 }
 // 固定枠に収まるページに分割（フォントは読みやすいまま・スクロール無し・見切れ無し）
 function paginate(formatted, prefix){
@@ -376,8 +370,11 @@ function paginate(formatted, prefix){
     let lo=1, hi=rest.length, best=1;
     while(lo<=hi){ const mid=(lo+hi)>>1; if(fit(rest.slice(0,mid))){ best=mid; lo=mid+1; } else hi=mid-1; }
     const head=rest.slice(0,best);
-    const lb=Math.max(head.lastIndexOf('\n'),head.lastIndexOf('。'),head.lastIndexOf('！'),head.lastIndexOf('？'),head.lastIndexOf('、'));
-    const cut=(lb>=best*0.45)?lb+1:best;
+    const nl=head.lastIndexOf('\n');
+    let cut;
+    if(nl>0){ cut=nl+1; }   // 文境界(\n)優先＝1文をページで跨がない
+    else { const lb=Math.max(head.lastIndexOf('。'),head.lastIndexOf('！'),head.lastIndexOf('？'),head.lastIndexOf('、'));
+           cut=(lb>=best*0.4)?lb+1:best; }   // 1文がページ超の時だけ句読点/任意で割る
     out.push(rest.slice(0,cut).replace(/^\n+|\n+$/g,''));
     rest=rest.slice(cut).replace(/^[\n 　]+/,'');
   }
