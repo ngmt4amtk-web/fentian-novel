@@ -6,3 +6,4 @@ node_modules/
 assets/sprites_raw/
 assets/sprites_t_predespill/
 assets/sprites_old_style/
+scenes_backup_*.js
