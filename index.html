@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>焚天 ─ 相国董卓伝</title>
 <style>
@@ -138,25 +141,8 @@
   /* ウインドウ非表示モード（立ち絵を眺める／次タップで復帰） */
   #app.hideui #win, #app.hideui #hud, #app.hideui #gauges, #app.hideui #bgcap{opacity:0; pointer-events:none;}
   #win,#hud,#gauges,#bgcap{transition:opacity .3s ease;}
-  /* 横画面（FGO風ワイド窓） */
-  @media (orientation:landscape){
-    /* FGO風：画面下端いっぱいの青い帯 */
-    #win{ left:0; right:0; transform:none; width:100%; bottom:0; border-radius:0;
-      height:clamp(132px,36dvh,200px); padding:20px clamp(22px,6vw,72px) 16px; overflow:visible;
-      background:linear-gradient(180deg, rgba(16,24,50,.22) 0%, rgba(12,19,42,.82) 24%, rgba(8,13,30,.95) 100%);
-      border:none; border-top:1.5px solid rgba(126,168,228,.55);
-      box-shadow:0 -8px 34px rgba(0,0,0,.5); }
-    /* 名前プレート：窓の左上端に乗る青タブ */
-    #name{ position:absolute; top:-14px; left:clamp(16px,5vw,80px); align-self:auto; display:inline-block;
-      background:linear-gradient(180deg,#31436f,#172242)!important; color:#fff!important;
-      border:1px solid rgba(126,168,228,.6); border-radius:6px; padding:4px 20px;
-      font-size:clamp(13px,1.7vw,17px); box-shadow:0 3px 10px rgba(0,0,0,.55); margin:0; }
-    /* 大きめの本文 */
-    #text{ font-size:clamp(21px,2.6vw,26px); line-height:1.7; letter-spacing:.04em; max-width:25em; color:#f1ede2; overflow:hidden; }
-    #gauges{ padding:calc(env(safe-area-inset-top, 0px) + 8px) 8px 0; gap:7px; }
-    .g{ height:48px; }
-  }
-  /* 縦の時はFGO同様に横向きを促す */
+  /* 横画面モードは廃止＝縦前提。立ち絵もテキスト窓も縦レイアウトで固定 */
+  /* (未使用の回転案内スタイル) */
   #rotate{position:absolute; top:calc(env(safe-area-inset-top, 0px) + 8px); left:50%; transform:translateX(-50%); z-index:13;
     display:none; align-items:center; gap:6px; padding:8px 15px; border-radius:20px; cursor:pointer;
     background:rgba(20,14,10,.92); border:1px solid rgba(184,146,60,.45); color:var(--gold);
@@ -454,7 +440,7 @@ function openLog(){
 // 高さは向き毎に一定＝人数が変わっても既存キャラがリサイズしない(位置だけスライド)
 const LAYOUT_P={1:{x:[50],h:80},2:{x:[22,78],h:80},3:{x:[15,50,85],h:80}};                         // 縦＝全身・一定
 const LAYOUT_L={1:{x:[50],h:132,b:-36},2:{x:[29,71],h:132,b:-36},3:{x:[20,50,80],h:132,b:-36}};    // 横＝FGO風拡大・一定
-function curLayout(){ return matchMedia('(orientation:landscape)').matches ? LAYOUT_L : LAYOUT_P; }
+function curLayout(){ return LAYOUT_P; }   // 縦前提（横画面モードは廃止）
 const STAGE_CAP=3;
 function charKey(k){ return k? String(k).split('_')[0] : null; }
 function ensureEl(ch){
