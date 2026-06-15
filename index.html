@@ -130,6 +130,23 @@
   /* ウインドウ非表示モード（立ち絵を眺める／次タップで復帰） */
   #app.hideui #win, #app.hideui #hud, #app.hideui #gauges, #app.hideui #bgcap{opacity:0; pointer-events:none;}
   #win,#hud,#gauges,#bgcap{transition:opacity .3s ease;}
+  /* 横画面（FGO風ワイド窓） */
+  @media (orientation:landscape){
+    #win{ left:50%; transform:translateX(-50%); width:min(96%,1180px);
+      height:clamp(128px,42dvh,202px); bottom:calc(env(safe-area-inset-bottom, 0px) + 8px); padding:11px 30px 20px; border-radius:12px; }
+    #text{ font-size:clamp(14px,1.85vw,16px); line-height:1.62; }
+    #name{ font-size:clamp(12px,1.5vw,15px); margin-bottom:6px; }
+    #gauges{ padding:calc(env(safe-area-inset-top, 0px) + 8px) 8px 0; gap:7px; }
+    .g{ height:50px; }
+  }
+  /* 縦の時はFGO同様に横向きを促す */
+  #rotate{position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center,#1c100a,#000 80%); color:var(--silk); text-align:center; padding:30px;}
+  #rotate .ic{font-size:56px; transform-origin:center; animation:rothint 2.4s ease-in-out infinite;}
+  #rotate .t1{margin-top:20px; font-size:19px; letter-spacing:.12em; font-weight:bold; color:var(--gold);}
+  #rotate .t2{margin-top:8px; font-size:13px; color:rgba(232,220,192,.6); letter-spacing:.08em;}
+  @keyframes rothint{0%,50%{transform:rotate(0);}75%,100%{transform:rotate(-90deg);}}
+  @media (orientation:portrait){ #rotate{display:flex;} }
 </style>
 </head>
 <body>
@@ -187,6 +204,7 @@
     <div id="endbody"></div>
     <div class="btn" id="restartbtn">タイトルへ</div>
   </div>
+  <div id="rotate"><div class="ic">📱</div><div class="t1">横向きにしてね</div><div class="t2">FGOと同じ横画面でお楽しみください</div></div>
 </div>
 
 <script src="scenes.js"></script>
@@ -271,7 +289,7 @@ let flags, node, idx, intent, currentSpeaker;
 let stage=[]; const stageEls={};
 // FGO式コントロール状態
 let auto=false, skip=false, skipTimer=null, autoTimer=null, hideUI=false, revealing=false, finishReveal=null, typeIv=null, history=[];
-let pages=[], pageIdx=0, curPrefix='';
+let pages=[], pageIdx=0, curPrefix='', curText=null;
 const SPEEDS=[{n:'瞬間',ms:0},{n:'速',ms:14},{n:'中',ms:28},{n:'遅',ms:48}]; let speedIdx=0;
 
 function start(){
@@ -279,7 +297,7 @@ function start(){
   clearStage(); currentSpeaker=null;
   setAuto(false); setSkip(false); setHideUI(false);
   if(autoTimer){clearTimeout(autoTimer); autoTimer=null;} clearInterval(typeIv); revealing=false;
-  pages=[]; pageIdx=0; history=[]; E('hud').classList.add('on');
+  pages=[]; pageIdx=0; curText=null; history=[]; E('hud').classList.add('on');
   E('menu').classList.remove('on'); E('log').classList.remove('on');
   updateGauges(false);
   E('title').style.display='none'; E('endcard').style.display='none';
@@ -334,9 +352,10 @@ function narrate(text){
 }
 // 文末（。！？）で改行を入れて1文1行のリズムに（読みやすさ）
 function formatLine(text){
-  return (text||'')
-    .replace(/([。！？]+[」』）)\]］】]*)/g,'$1\n')   // 文末＋閉じ括弧で改行
-    .replace(/[ 　]*\n[ 　]*/g,'\n')                 // 改行前後の空白を除去
+  if(matchMedia('(orientation:landscape)').matches) return (text||'');   // 横：ワイドに流して1ページの情報量を最大化
+  return (text||'')                                                       // 縦：文末で改行して1文1行
+    .replace(/([。！？]+[」』）)\]］】]*)/g,'$1\n')
+    .replace(/[ 　]*\n[ 　]*/g,'\n')
     .replace(/\n{2,}/g,'\n').replace(/\n+$/,'');
 }
 // 固定枠に収まるページに分割（フォントは読みやすいまま・スクロール無し・見切れ無し）
@@ -358,8 +377,18 @@ function paginate(formatted, prefix){
   return out.length?out:[''];
 }
 function startLine(prefix, text){
-  curPrefix=prefix; pages=paginate(formatLine(text), prefix); pageIdx=0;
+  curPrefix=prefix; curText=text; pages=paginate(formatLine(text), prefix); pageIdx=0;
   typeLine(curPrefix, pages[0]);
+}
+// 画面回転/リサイズ時：立ち絵配置とテキストのページ割りを組み直す
+function refit(){
+  renderStage();
+  if(curText!=null && node && E('title').style.display==='none' && E('endcard').style.display!=='flex'){
+    const keep=pageIdx;
+    pages=paginate(formatLine(curText), curPrefix); pageIdx=Math.min(keep,pages.length-1);
+    const t=E('text'); t.innerHTML=curPrefix; const sp=document.createElement('span'); sp.textContent=pages[pageIdx]; t.appendChild(sp);
+    revealing=false; E('next').textContent=(pageIdx<pages.length-1)?'▽':'▼'; E('next').style.display='inline';
+  }
 }
 // ── タイプ送り：表示中タップで一気→次タップで次ページ/次行 ──
 function typeLine(prefix, text){
@@ -401,7 +430,9 @@ function openLog(){
   E('log').classList.add('on'); requestAnimationFrame(()=>{ b.scrollTop=b.scrollHeight; });
 }
 // ── 立ち絵ステージング：showSprite=「そのキャラを舞台に乗せる」。位置はステージ人数から自動決定 ──
-const LAYOUT={1:{x:[50],h:76},2:{x:[23,77],h:67},3:{x:[15,50,85],h:56}};
+const LAYOUT_P={1:{x:[50],h:88},2:{x:[24,76],h:78},3:{x:[16,50,84],h:66}};   // 縦
+const LAYOUT_L={1:{x:[50],h:95},2:{x:[31,69],h:97},3:{x:[20,50,80],h:93}};   // 横（FGO風・全身横並び）
+function curLayout(){ return matchMedia('(orientation:landscape)').matches ? LAYOUT_L : LAYOUT_P; }
 const STAGE_CAP=3;
 function charKey(k){ return k? String(k).split('_')[0] : null; }
 function ensureEl(ch){
@@ -427,7 +458,8 @@ function showSprite(key){
   renderStage();
 }
 function renderStage(){
-  const n=Math.min(stage.length,STAGE_CAP); const L=LAYOUT[n]||LAYOUT[STAGE_CAP];
+  const LL=curLayout();
+  const n=Math.min(stage.length,STAGE_CAP); const L=LL[n]||LL[STAGE_CAP];
   stage.forEach((s,i)=>{
     const el=ensureEl(s.char); const img=el.querySelector('img');
     const src='assets/sprites/'+s.key+'.png';
@@ -506,6 +538,9 @@ E('m-title').onclick=e=>{ e.stopPropagation(); E('menu').classList.remove('on');
   setAuto(false); setSkip(false); E('hud').classList.remove('on');
   E('endcard').style.display='none'; E('title').style.display='flex'; };
 ['log','menu'].forEach(id=>{ E(id).onclick=e=>{ e.stopPropagation(); if(e.target===E(id)) E(id).classList.remove('on'); }; });
+// 画面回転・リサイズで縦↔横レイアウトを組み直す
+try{ matchMedia('(orientation:landscape)').addEventListener('change', refit); }catch(_){}
+let _rezT; window.addEventListener('resize', ()=>{ clearTimeout(_rezT); _rezT=setTimeout(refit,160); });
 // SCENES未ロード時の保険
 if(typeof SCENES==='undefined'){ window.SCENES={}; }
 </script>
