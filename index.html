@@ -240,7 +240,7 @@ function pickBg(cap){
   if(/中庭/.test(c)) return 'courtyard';
   if(/回廊/.test(c)) return 'corridor';
   if(/出立|郿塢.{0,5}門/.test(c)) return 'meiwu';
-  if(/大通り|市曹|長安市|街道|晒/.test(c)) return 'street';
+  if(/大通り|市曹|長安市|街道|晒|臍火|屍/.test(c)) return 'street';
   if(/私室|居室|書斎|文書庫|奥院|閨|寝|書庫|郿塢/.test(c)) return 'chamber';
   return null;
 }
@@ -454,7 +454,10 @@ const STAGE_CAP=3;
 function charKey(k){ return k? String(k).split('_')[0] : null; }
 function ensureEl(ch){
   let el=stageEls[ch];
-  if(!el){ el=document.createElement('div'); el.className='sprite'; el.dataset.char=ch;
+  if(!el){
+    // 退場アニメ中(450ms)に同キャラが再登場すると残骸と二重表示になる（例:李儒が2人）。残骸を即時除去
+    E('stage').querySelectorAll('.sprite[data-char="'+ch+'"]').forEach(o=>{ if(o.parentNode) o.parentNode.removeChild(o); });
+    el=document.createElement('div'); el.className='sprite'; el.dataset.char=ch;
     el.appendChild(document.createElement('img')); E('stage').appendChild(el); stageEls[ch]=el; }
   return el;
 }
