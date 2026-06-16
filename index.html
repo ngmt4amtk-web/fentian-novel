@@ -23,6 +23,9 @@
     color:rgba(232,220,192,.45); text-shadow:0 1px 4px #000;}
   /* 立ち絵ステージ（FGO式・縦画面・キャラ自動配置・話者スポットライト） */
   #stage{position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden;}
+  /* 見せ場CG（一枚絵・立ち絵と背景の上、テキスト窓の下） */
+  #cg{position:absolute; inset:0; z-index:4; opacity:0; pointer-events:none; background:#000; background-size:cover; background-position:center; transition:opacity .55s ease;}
+  #cg.on{opacity:1;}
   .sprite{position:absolute; bottom:0; left:50%; opacity:0; will-change:transform,opacity,filter;
     transform:translateX(-50%) translateY(16px);
     transition:opacity .45s ease, transform .45s ease, filter .35s ease, height .4s ease, left .45s ease;
@@ -156,6 +159,7 @@
   <div id="bgtint"></div>
   <div id="bgcap"></div>
   <div id="stage"></div>
+  <div id="cg"></div>
   <div id="fx"></div>
   <div id="veil"></div>
   <div id="gauges">
@@ -244,7 +248,10 @@ function pickBg(cap){
   if(/私室|居室|書斎|文書庫|奥院|閨|寝|書庫|郿塢/.test(c)) return 'chamber';
   return null;
 }
+function showCg(cg){ if(!cg) return; const el=E('cg'); el.style.background=VIGNETTE+", url('assets/cg/"+cg+".jpg') center/cover"; el.classList.add('on'); }
+function hideCg(){ const el=E('cg'); if(el) el.classList.remove('on'); }
 function setBg(cap, mood){
+  hideCg();                                            // 場面転換でCGは解除
   const key=pickBg(cap); const bg=E('bg'), tint=E('bgtint');
   if(key){
     bg.style.background='#000'; bg.style.backgroundImage="url('"+BG_IMG[key]+"')";
@@ -302,7 +309,7 @@ function start(){
   pages=[]; pageIdx=0; curText=null; history=[]; E('hud').classList.add('on');
   E('menu').classList.remove('on'); E('log').classList.remove('on');
   updateGauges(false);
-  E('title').style.display='none'; E('endcard').style.display='none';
+  E('title').style.display='none'; E('endcard').style.display='none'; hideCg();
   go('prologue');
 }
 function go(id){
@@ -316,6 +323,7 @@ function render(){
   const s=node[idx];
   if(s.t==='bg'){ setBg(s.bg, s.mood); E('bgcap').textContent=s.bg||''; clearStage(); idx++; return render(); }
   if(s.t==='sprite'){ showSprite(s.key); idx++; return render(); }
+  if(s.t==='cg'){ showCg(s.cg); idx++; return render(); }
   if(s.t==='hide'){ clearStage(); idx++; return render(); }
   if(s.t==='fx'){ doFx(s.fx); idx++; return render(); }
   if(s.t==='jump'){ return go(s.goto); }
@@ -536,7 +544,7 @@ function renderStatus(){
 }
 const CGM={BIYOKU:'cg_biyoku', KOOU:'cg_koou', FENTIAN:'cg_fentian', RAKKA:'cg_rakka'};
 function ending(id){
-  setAuto(false); setSkip(false); E('hud').classList.remove('on');
+  setAuto(false); setSkip(false); hideCg(); E('hud').classList.remove('on');
   const e=ENDINGS[id]||ENDINGS.FENTIAN;
   const cg=CGM[id]||CGM.FENTIAN;
   E('endcard').style.background="linear-gradient(180deg, rgba(6,4,3,.30) 0%, rgba(6,4,3,.50) 42%, rgba(6,4,3,.93) 100%), url('assets/cg/"+cg+".jpg') center/cover";
