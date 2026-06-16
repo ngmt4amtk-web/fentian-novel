@@ -306,8 +306,8 @@ function start(){
   go('prologue');
 }
 function go(id){
-  if(id==='__resolve_reconcile__'){ return ending(resolveEnding(flags,'reconcile')); }
-  if(id==='__resolve_kill__'){ return ending(resolveEnding(flags,'kill')); }
+  if(id==='__resolve_reconcile__'){ return go(resolveEnding(flags,'reconcile')); }
+  if(id==='__resolve_kill__'){ return go(resolveEnding(flags,'kill')); }
   if(!SCENES[id]){ console.warn('missing node',id); return ending('FENTIAN'); }
   node=SCENES[id]; idx=0; render();
 }
