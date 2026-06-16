@@ -316,6 +316,7 @@ function go(id){
   if(id==='__resolve_reconcile__'){ return go(resolveEnding(flags,'reconcile')); }
   if(id==='__resolve_kill__'){ return go(resolveEnding(flags,'kill')); }
   if(!SCENES[id]){ console.warn('missing node',id); return ending('FENTIAN'); }
+  clearStage();                                        // ノード遷移で立ち絵をリセット（前場面の居残り防止）
   node=SCENES[id]; idx=0; render();
 }
 function render(){
